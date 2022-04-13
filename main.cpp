@@ -72,105 +72,109 @@ private:
     }
 
     NDArray<T> reduce_axises(int operation, char axis) {
-        if (axis == 'x') {
-            std::pair<int, int> pair = std::make_pair(1, shape.second);
-            NDArray<float> result(pair);
-            switch (operation) {
-                case 1:
-                for (int i = 0; i < shape.second; i++) {
-                    T value = 0;
-                    for (int j = 0; j < shape.first; j++) {
-                        value += array[flatten_indices(j, i)];
-                    }
-                    result.get_by_true_index(i) = value;
-                }
-                break;
-                case 2:
-                for (int i = 0; i < shape.second; i++) {
-                    T value = array[i * shape.first];
-                    for (int j = 0; j < shape.first; j++) {
-                        if (value > array[flatten_indices(j, i)]) {
-                            value = array[flatten_indices(j, i)];
-                        }
-                    }
-                    result.get_by_true_index(i) = value;
-                }
-                break;
-                case 3:
-                for (int i = 0; i < shape.second; i++) {
-                    T value = array[i * shape.second];
-                    for (int j = 0; j < shape.first; j++) {
-                        if (value < array[flatten_indices(j, i)]) {
-                            value = array[flatten_indices(j, i)];
-                        }
-                    }
-                    result.get_by_true_index(i) = value;
-                }
-                break;
-                case 4:
-                for (int i = 0; i < shape.second; i++) {
-                    T value = 0;
-                    for (int j = 0; j < shape.first; j++) {
-                        value += array[flatten_indices(j, i)];
-                    }
-                    result.get_by_true_index(i) = value / shape.first;
-                }
-                break;
-            }
-            
-            return result;
+        int first_dim, 
+            second_dim,
+            i = 0,
+            j = 0;
+        int* x_dim;
+        int* y_dim;
+        if (axis == 'y') {
+            first_dim = shape.second;
+            second_dim = shape.first;
+            x_dim = &j;
+            y_dim = &i;
         } 
-        else if (axis == 'y') {
-            std::pair<int, int> pair = std::make_pair(1, shape.first);
-            NDArray<float> result(pair);
-            switch (operation) {
-                case 1:
-                for (int i = 0; i < shape.first; i++) {
-                    T value = 0;
-                    for (int j = 0; j < shape.second; j++) {
-                        value += array[flatten_indices(i, j)];
-                    }
-                    result.get_by_true_index(i) = value;
-                }
-                break;
-                case 2:
-                for (int i = 0; i < shape.first; i++) {
-                    T value = array[i * shape.first];
-                    for (int j = 0; j < shape.second; j++) {
-                        if (value > array[flatten_indices(i, j)]) {
-                            value = array[flatten_indices(i, j)];
-                        }
-                    }
-                    result.get_by_true_index(i) = value;
-                }
-                break;
-                case 3:
-                for (int i = 0; i < shape.first; i++) {
-                    T value = array[i * shape.second];
-                    for (int j = 0; j < shape.second; j++) {
-                        if (value < array[flatten_indices(i, j)]) {
-                            value = array[flatten_indices(i, j)];
-                        }
-                    }
-                    result.get_by_true_index(i) = value;
-                }
-                break;
-                case 4:
-                for (int i = 0; i < shape.first; i++) {
-                    T value = 0;
-                    for (int j = 0; j < shape.second; j++) {
-                        value += array[flatten_indices(i, j)];
-                    }
-                    result.get_by_true_index(i) = value / shape.first;
-                }
-                break;
-            }
-            return result;
-        } 
+        else if (axis == 'x') {
+            first_dim = shape.first;
+            second_dim = shape.second;
+            x_dim = &i;
+            y_dim = &j;
+        }
         else {
             std::cout << "Incorrect axis\n";
             return (*this);
-        } 
+        }
+        std::pair<int, int> pair = std::make_pair(1, first_dim);
+        NDArray<float> result(pair);
+        switch (operation) {
+            case 1:
+            for (i = 0; i < first_dim; i++) {
+                T value = 0;
+                for (j = 0; j < second_dim; j++) {
+                    value += array[flatten_indices(*y_dim, *x_dim)];
+                }
+                result.get_by_true_index(i) = value;
+            }
+            break;
+            case 2:
+            for (i = 0; i < first_dim; i++) {
+                T value = array[i * second_dim];
+                for (j = 0; j < second_dim; j++) {
+                    if (value > array[flatten_indices(*y_dim, *x_dim)]) {
+                        value = array[flatten_indices(*y_dim, *x_dim)];
+                    }
+                }
+                result.get_by_true_index(i) = value;
+            }
+            break;
+            case 3:
+            for (i = 0; i < first_dim; i++) {
+                T value = array[i * first_dim];
+                for (j = 0; j < second_dim; j++) {
+                    if (value < array[flatten_indices(*y_dim, *x_dim)]) {
+                        value = array[flatten_indices(*y_dim, *x_dim)];
+                    }
+                }
+                result.get_by_true_index(i) = value;
+            }
+            break;
+            case 4:
+            for (i = 0; i < first_dim; i++) {
+                T value = 0;
+                for (j = 0; j < second_dim; j++) {
+                    value += array[flatten_indices(*y_dim, *x_dim)];
+                }
+                result.get_by_true_index(i) = value / shape.first;
+            }
+            break;
+        }
+        return result;
+    }
+
+    T reduce_axises(int operation) {
+        T result; 
+        switch (operation) {
+            case 1:
+            result = 0;
+            for (int i = 0; i < size; i++) {
+                result += array[i];
+            }
+            break;
+            case 2:
+            result = array[0];
+            for (int i = 0; i < size; i++) {
+                if (result > array[i]) {
+                    result = array[i];
+                }
+            }
+            break;
+            case 3:
+            result = array[0];
+            for (int i = 0; i < size; i++) {
+                if (result < array[i]) {
+                    result = array[i];
+                }
+            }
+            break;
+            case 4:
+            result = 0;
+            for (int i = 0; i < size; i++) {
+                result += array[i];
+            }
+            result /= size;
+            break;
+        }
+        return result;
     }
 
 public:
@@ -238,19 +242,19 @@ public:
         std::cout << '\n';
     }
 
-    NDArray<T> operator+(NDArray& other) {
+    NDArray<T> operator+(NDArray<T>& other) {
         return operation(other, '+');
     }
 
-    NDArray<T> operator-(NDArray& other) {
+    NDArray<T> operator-(NDArray<T>& other) {
         return operation(other, '-');
     }
 
-    NDArray<T> operator*(NDArray& other) {
+    NDArray<T> operator*(NDArray<T>& other) {
         return operation(other, '*');
     }
 
-    NDArray<T> operator/(NDArray& other) {
+    NDArray<T> operator/(NDArray<T>& other) {
         return operation(other, '/');
     }
 
@@ -314,6 +318,22 @@ public:
     NDArray<T> avg(char axis) {
         return reduce_axises(4, axis);
     }
+
+    T sum() {
+        return reduce_axises(1);
+    }
+    
+    T min() {
+        return reduce_axises(2);
+    }
+    
+    T max() {
+        return reduce_axises(3);
+    }
+
+    T avg() {
+        return reduce_axises(4);
+    }
 };
 
 int main() {
@@ -350,19 +370,23 @@ int main() {
     
     std::cout << "Сумма рядов/столбцов:\n";
     mrx1.sum('x').display();
-    mrx1.sum('y').display(); 
+    mrx1.sum('y').display();
+    std::cout << mrx1.sum() << '\n';  
 
-    std::cout << "Минимум рядов/столбцов:\n";
+    std::cout << "Минимум рядов/столбцов/всего:\n";
     mrx1.min('x').display();
     mrx1.min('y').display(); 
+    std::cout << mrx1.min() << '\n';
 
-    std::cout << "Максимум рядов/столбцов:\n";
+    std::cout << "Максимум рядов/столбцов/всего:\n";
     mrx1.max('x').display();
     mrx1.max('y').display(); 
+    std::cout << mrx1.max() << '\n';
 
-    std::cout << "Среднее рядов/столбцов:\n";
+    std::cout << "Среднее рядов/столбцов/всего:\n";
     mrx1.avg('x').display();
     mrx1.avg('y').display(); 
+    std::cout << mrx1.avg() << '\n';
 
     return 0;
 }
