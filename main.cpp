@@ -7,6 +7,8 @@ template <typename T>
 class NDArray {
 private:
     T * array;
+    int slice_start,
+        slice_stop;
 
     /*
     // здесь будут храниться указатели на ряды для получения элемента по индексу
@@ -185,12 +187,16 @@ public:
         this->shape = shape;
         this->size = shape.first * shape.second;
         this->array = (T*) malloc(this->size * sizeof(T));
+        this->slice_start = 0;
+        this->slice_stop = this->size;
     }
 
     NDArray<T>(std::pair<int, int>& shape, char arg) {
         this->shape = shape;
         this->size = shape.first * shape.second;
         this->array = (T*) malloc(this->size * sizeof(T));
+        this->slice_start = 0;
+        this->slice_stop = this->size;
         switch (arg) {
             case '0':
                 this->fill(0);
@@ -208,17 +214,16 @@ public:
         }
     }
 
-    /*
-    NDArray<T>(NDArray<T>& other) {
+    NDArray<T>(const NDArray<T>& other) {
         this->size = other.size;
         this->shape = other.shape;
         this->array = (T*) malloc(this->size * sizeof(T));
+        this->slice_start = 0;
+        this->slice_stop = this->size;
         for (int i = 0; i < this->size; i++) {
-            int index = bloat_index(i);
-            (*this)[index] = other[index];
+            this->array[i] = other.get_by_true_index(i);
         }
     }
-    */
 
     T* operator[](int index) {
         if (index > shape.first || index < 0) {
@@ -229,6 +234,10 @@ public:
     }
 
     T& get_by_true_index(int index) {
+        return array[index];
+    }
+
+    T& get_by_true_index(int index) const {
         return array[index];
     }
 
@@ -258,18 +267,32 @@ public:
         return operation(other, '/');
     }
 
-    /*
-    void operator=(NDArray<T>& other){
-        if (this->shape != other.shape) {
-            std::cout << "Matrixes should have the same shape!\n";
-            return;
+    NDArray<T>& slice(int y_start, int x_start, int y_stop, int x_stop) {
+        int start_idx = flatten_indices(x_start, y_start);
+        int stop_idx = flatten_indices(x_stop, y_stop);
+        if ( (stop_idx - start_idx <= 0) || (start_idx < 0) || (stop_idx > size) )  {
+            std::cout << "Incorrect indices\n";
+            return *this;
         }
-        for (int i = 0; i < this->size; i++) {
-            int index = bloat_index(i);
-            (*this)[index] = other[index];
-        }
+        slice_start = start_idx;
+        slice_stop = stop_idx;
+        return *this;
     }
-    */
+
+    template <int N>
+    NDArray<T>& operator=(T (&other_arr)[N]) {
+        if (N != slice_stop - slice_start) {
+            std::cout << "Incorrect array size\n";
+            return *this;
+        } 
+        for (int i = slice_start; i < slice_stop; i++) {
+            array[i] = other_arr[i - slice_start];
+        }
+        slice_start = 0;
+        slice_stop = size;
+        return *this;
+    }
+
     NDArray<T> transpose(){
         NDArray<T> result(this->shape);
         for (int i = 0; i < this->shape.first; i++) {
@@ -334,6 +357,7 @@ public:
     T avg() {
         return reduce_axises(4);
     }
+    
 };
 
 int main() {
@@ -371,22 +395,26 @@ int main() {
     std::cout << "Сумма рядов/столбцов:\n";
     mrx1.sum('x').display();
     mrx1.sum('y').display();
-    std::cout << mrx1.sum() << '\n';  
+    std::cout << mrx1.sum() << "\n\n";  
 
     std::cout << "Минимум рядов/столбцов/всего:\n";
     mrx1.min('x').display();
     mrx1.min('y').display(); 
-    std::cout << mrx1.min() << '\n';
+    std::cout << mrx1.min() << "\n\n";
 
     std::cout << "Максимум рядов/столбцов/всего:\n";
     mrx1.max('x').display();
     mrx1.max('y').display(); 
-    std::cout << mrx1.max() << '\n';
+    std::cout << mrx1.max() << "\n\n";
 
     std::cout << "Среднее рядов/столбцов/всего:\n";
     mrx1.avg('x').display();
     mrx1.avg('y').display(); 
-    std::cout << mrx1.avg() << '\n';
+    std::cout << mrx1.avg() << "\n\n";
 
+    std::cout << "Присвоение по слайсу (от (1,2) до (2,2) не включительно значений 0, 1, 2):\n";
+    float arr[3] = {0, 1, 2};
+    mrx1.slice(1, 2, 2, 2) = arr;
+    mrx1.display();
     return 0;
 }
