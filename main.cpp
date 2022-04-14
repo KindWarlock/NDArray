@@ -281,12 +281,13 @@ public:
 
     template <int N>
     NDArray<T>& operator=(T (&other_arr)[N]) {
-        if (N != slice_stop - slice_start) {
+        if (N == slice_stop - slice_start) {
             std::cout << "Incorrect array size\n";
-            return *this;
         } 
-        for (int i = slice_start; i < slice_stop; i++) {
-            array[i] = other_arr[i - slice_start];
+        else { 
+            for (int i = slice_start; i < slice_stop; i++) {
+                array[i] = other_arr[i - slice_start];
+            }
         }
         slice_start = 0;
         slice_stop = size;
